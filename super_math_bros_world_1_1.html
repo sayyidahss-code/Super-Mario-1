@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Math Bros - World 1-1 (SD Kelas 3)</title>
+    <!-- Font Pixel Retro 8-Bit -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #111;
+            font-family: 'Press Start 2P', monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            color: #fff;
+        }
+
+        /* Kontainer Utama Game */
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* Kontrol Sentuh On-Screen */
+        #touch-controls {
+            position: absolute;
+            bottom: 16px;
+            left: 0;
+            width: 100%;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .dpad-group, .action-group {
+            display: flex;
+            gap: 14px;
+            pointer-events: auto;
+        }
+
+        .retro-btn {
+            background: rgba(255, 255, 255, 0.25);
+            border: 4px solid #fff;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 18px;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.6);
+            cursor: pointer;
+            transition: transform 0.05s, background 0.1s;
+            touch-action: manipulation;
+        }
+
+        .retro-btn:active, .retro-btn.active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.6);
+            background: rgba(255, 255, 255, 0.45);
+        }
+
+        .btn-jump {
+            width: 84px;
+            height: 64px;
+            background: rgba(228, 0, 88, 0.65);
+            font-size: 12px;
+        }
+
+        .btn-jump:active, .btn-jump.active {
+            background: rgba(228, 0, 88, 0.9);
+        }
+
+        /* Modal Retro NES (Kuis, Start, Victory, Notifikasi) */
+        .nes-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            z-index: 50;
+        }
+
+        .nes-box {
+            background: #000;
+            border: 4px solid #fff;
+            box-shadow: inset 0 0 0 4px #000, 0 0 0 4px #000, 0 12px 24px rgba(0,0,0,0.9);
+            border-radius: 8px;
+            max-width: 680px;
+            width: 100%;
+            padding: 20px;
+            color: #fff;
+            position: relative;
+        }
+
+        .nes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #fff;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #FAC000;
+        }
+
+        .question-text {
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 18px;
+            color: #fff;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 540px) {
+            .options-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .question-text {
+                font-size: 14px;
+            }
+        }
+
+        .option-btn {
+            background: #181818;
+            border: 3px solid #fff;
+            border-radius: 6px;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            padding: 14px 12px;
+            text-align: left;
+            cursor: pointer;
+            line-height: 1.4;
+            transition: all 0.1s;
+        }
+
+        .option-btn:hover {
+            background: #FAC000;
+            color: #000;
+            border-color: #FAC000;
+        }
+
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+
+        .feedback-box {
+            margin-top: 16px;
+            padding: 14px;
+            border: 3px solid #fff;
+            border-radius: 6px;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .feedback-correct {
+            background: #005800;
+            border-color: #00A800;
+        }
+
+        .feedback-wrong {
+            background: #881400;
+            border-color: #F83800;
+        }
+
+        .action-start-btn {
+            margin-top: 18px;
+            width: 100%;
+            background: #E40058;
+            border: 4px solid #fff;
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 13px;
+            padding: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .action-start-btn:hover {
+            background: #F83800;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Toast pesan singkat di atas canvas */
+        #toast-banner {
+            position: absolute;
+            top: 68px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            border: 3px solid #FAC000;
+            color: #FAC000;
+            padding: 10px 16px;
+            font-size: 11px;
+            text-align: center;
+            line-height: 1.5;
+            border-radius: 6px;
+            z-index: 30;
+            pointer-events: none;
+            max-width: 90%;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Banner Notifikasi In-Game -->
+    <div id="toast-banner" class="hidden"></div>
+
+    <!-- Kontrol Virtual On-Screen -->
+    <div id="touch-controls">
+        <div class="dpad-group">
+            <button id="btn-left" class="retro-btn" aria-label="Kiri">◀</button>
+            <button id="btn-right" class="retro-btn" aria-label="Kanan">▶</button>
+        </div>
+        <div class="action-group">
+            <button id="btn-jump" class="retro-btn btn-jump" aria-label="Lompat">LOMPAT</button>
+        </div>
+    </div>
+
+    <!-- Layar Mulai (Start Screen) -->
+    <div id="start-modal" class="nes-overlay">
+        <div class="nes-box" style="text-align: center;">
+            <div style="background: #B81D13; border: 4px solid #FAC000; padding: 18px; margin-bottom: 18px; border-radius: 6px;">
+                <p style="font-size: 10px; color: #FAC000; margin-bottom: 8px;">EDISI EDUKASI SD KELAS 3</p>
+                <h1 style="font-size: 20px; line-height: 1.4; color: #fff; text-shadow: 3px 3px 0 #000;">SUPER MATH BROS.<br>WORLD 1-1</h1>
+            </div>
+            <p style="font-size: 11px; line-height: 1.7; margin-bottom: 14px; color: #ddd;">
+                Materi: <span style="color:#FAC000;">Perkalian, Pembagian &amp; Soal Cerita</span>
+            </p>
+            <div style="background: #181818; border: 2px solid #555; padding: 12px; font-size: 10px; line-height: 1.7; text-align: left; margin-bottom: 16px; border-radius: 6px;">
+                <p>🎯 <strong>MISI:</strong> Sundul &amp; jawab semua <strong>10 Blok "?"</strong> dengan benar lalu raih <strong>Tiang Bendera</strong>!</p>
+                <p>🍄 <strong>JAMUR SUPER:</strong> Jawab benar untuk menjadi Mario Super (+1000 Skor).</p>
+                <p>👾 <strong>GOOMBA:</strong> Injak kepalanya dari atas! Hindari tabrakan samping.</p>
+                <p>🎮 <strong>KONTROL:</strong> Panah Kiri/Kanan, Spasi/Atas untuk Lompat (atau tombol layar).</p>
+            </div>
+            <button id="btn-start-game" class="action-start-btn">MULAI PETUALANGAN ▶</button>
+        </div>
+    </div>
+
+    <!-- Modal Kuis Pop-Up -->
+    <div id="quiz-modal" class="nes-overlay hidden">
+        <div class="nes-box">
+            <div class="nes-header">
+                <span id="quiz-badge">BLOK ? #1 / 10</span>
+                <span id="quiz-category" style="color: #fff;">PERKALIAN</span>
+            </div>
+            <div id="quiz-question" class="question-text">
+                Memuat soal...
+            </div>
+            <div id="quiz-options" class="options-grid">
+                <!-- Tombol A, B, C, D dirender via JS -->
+            </div>
+            <div id="quiz-feedback" class="feedback-box hidden">
+                <p id="feedback-title" style="font-weight: bold; margin-bottom: 6px;"></p>
+                <p id="feedback-desc"></p>
+                <button id="btn-continue-quiz" class="action-start-btn" style="margin-top: 12px; padding: 10px; font-size: 11px;">LANJUTKAN MAIN ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layar Kemenangan (Victory Screen) -->
+    <div id="victory-modal" class="nes-overlay hidden">
+        <div class="nes-box" style="text-align: center;">
+            <h2 style="font-size: 18px; color: #FAC000; margin-bottom: 12px; line-height: 1.5;">🎉 COURSE CLEAR! 🎉<br>WORLD 1-1 SELESAI!</h2>
+            <p style="font-size: 11px; line-height: 1.6; margin-bottom: 18px; color: #a8f0a8;">
+                Hebat! Kamu berhasil menaklukkan semua 10 soal Perkalian &amp; Pembagian Kelas 3 SD!
+            </p>
+            <div style="background: #181818; border: 3px solid #fff; padding: 16px; margin-bottom: 18px; font-size: 12px; line-height: 2; border-radius: 6px;">
+                <p>SKOR AKHIR : <span id="final-score" style="color: #FAC000;">000000</span></p>
+                <p>KOIN TERKUMPUL : <span id="final-coins" style="color: #FAC000;">x00</span></p>
+                <p>BLOK "?" TERJAWAB : <span style="color: #00A800;">10 / 10</span></p>
+            </div>
+            <button id="btn-restart-game" class="action-start-btn">MAIN LAGI ↻</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * SUPER MATH BROS - WORLD 1-1 (SD KELAS 3: PERKALIAN, PEMBAGIAN & SOAL CERITA)
+ * Engine Game 2D Side-Scrolling Retro 8-Bit NES Single-File
+ * ============================================================================
+ */
+
+// --- 1. SISTEM AUDIO SINTESIS 8-BIT (WEB AUDIO API) ---
+class RetroSound {
+    constructor() {
+        this.ctx = null;
+        this.enabled = true;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                this.ctx = new AudioContext();
+            }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    playTone(freqStart, freqEnd, duration, type = 'square', volume = 0.12) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            const now = this.ctx.currentTime;
+            osc.frequency.setValueAtTime(freqStart, now);
+            if (freqEnd !== freqStart) {
+                osc.frequency.exponentialRampToValueAtTime(freqEnd, now + duration);
+            }
+            gain.gain.setValueAtTime(volume, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+        } catch (e) {}
+    }
+
+    jump() {
+        this.playTone(180, 520, 0.18, 'square', 0.1);
+    }
+
+    bump() {
+        this.playTone(140, 70, 0.12, 'triangle', 0.15);
+    }
+
+    coin() {
+        this.playTone(987.77, 987.77, 0.08, 'square', 0.1);
+        setTimeout(() => this.playTone(1318.51, 1318.51, 0.25, 'square', 0.1), 80);
+    }
+
+    stomp() {
+        this.playTone(300, 90, 0.14, 'square', 0.14);
+    }
+
+    hurt() {
+        this.playTone(400, 110, 0.35, 'sawtooth', 0.14);
+    }
+
+    powerup() {
+        const notes = [330, 392, 659, 523, 587, 784];
+        notes.forEach((n, i) => {
+            setTimeout(() => this.playTone(n, n, 0.09, 'square', 0.11), i * 75);
+        });
+    }
+
+    wrong() {
+        this.playTone(160, 120, 0.3, 'sawtooth', 0.13);
+    }
+
+    flagpole() {
+        const notes = [523, 659, 784, 1046, 784, 1046];
+        notes.forEach((n, i) => {
+            setTimeout(() => this.playTone(n, n, 0.14, 'square', 0.12), i * 120);
+        });
+    }
+}
+
+const sfx = new RetroSound();
+
+// --- 2. BANK SOAL MATEMATIKA SD KELAS 3 (10 TINGKAT KESULITAN BERTAHAP) ---
+const QUIZ_QUESTIONS = [
+    {
+        id: 1,
+        category: "PERKALIAN DASAR",
+        question: "Budi membeli 4 kantong kelereng. Setiap kantong berisi 6 kelereng. Berapa jumlah seluruh kelereng Budi?",
+        options: ["20 kelereng", "24 kelereng", "28 kelereng", "10 kelereng"],
+        correctIndex: 1,
+        explanation: "4 kantong × 6 kelereng = 24 kelereng (6 + 6 + 6 + 6 = 24)."
+    },
+    {
+        id: 2,
+        category: "PEMBAGIAN DASAR",
+        question: "Ibu mempunyai 18 kue donat yang akan dibagikan sama rata ke dalam 3 piring. Berapa isi donat di setiap piring?",
+        options: ["5 donat", "7 donat", "6 donat", "9 donat"],
+        correctIndex: 2,
+        explanation: "18 ÷ 3 = 6 donat di setiap piring, karena 3 × 6 = 18."
+    },
+    {
+        id: 3,
+        category: "PERKALIAN",
+        question: "Di kelas 3A terdapat 7 baris meja belajar. Setiap baris terdiri dari 5 meja. Berapa total meja di kelas 3A?",
+        options: ["35 meja", "30 meja", "40 meja", "12 meja"],
+        correctIndex: 0,
+        explanation: "7 baris × 5 meja = 35 meja."
+    },
+    {
+        id: 4,
+        category: "PEMBAGIAN",
+        question: "Pak Tani memanen 32 buah jeruk. Jeruk itu dimasukkan ke dalam 4 keranjang sama banyak. Berapa jeruk tiap keranjang?",
+        options: ["6 jeruk", "7 jeruk", "9 jeruk", "8 jeruk"],
+        correctIndex: 3,
+        explanation: "32 ÷ 4 = 8 jeruk per keranjang (4 × 8 = 32)."
+    },
+    {
+        id: 5,
+        category: "PERKALIAN",
+        question: "Seekor laba-laba memiliki 8 kaki. Jika ada 6 ekor laba-laba di taman, berapa jumlah seluruh kaki mereka?",
+        options: ["42 kaki", "48 kaki", "54 kaki", "46 kaki"],
+        correctIndex: 1,
+        explanation: "6 ekor × 8 kaki = 48 kaki."
+    },
+    {
+        id: 6,
+        category: "PEMBAGIAN",
+        question: "Siti memiliki 45 lembar stiker bintang. Ia ingin membagikannya kepada 9 temannya sama rata. Berapa stiker yang diterima tiap teman?",
+        options: ["4 stiker", "6 stiker", "5 stiker", "7 stiker"],
+        correctIndex: 2,
+        explanation: "45 ÷ 9 = 5 stiker untuk masing-masing teman."
+    },
+    {
+        id: 7,
+        category: "SOAL CERITA PERKALIAN",
+        question: "Sebuah toko buku menjual 8 paket pensil. Setiap paket berisi 9 batang pensil warna. Berapa batang pensil seluruhnya?",
+        options: ["72 batang", "63 batang", "81 batang", "64 batang"],
+        correctIndex: 0,
+        explanation: "8 paket × 9 batang = 72 batang pensil warna."
+    },
+    {
+        id: 8,
+        category: "SOAL CERITA PEMBAGIAN",
+        question: "Panitia lomba menyiapkan 56 botol air mineral untuk 7 regu peserta. Setiap regu mendapat bagian sama banyak. Berapa botol per regu?",
+        options: ["7 botol", "9 botol", "6 botol", "8 botol"],
+        correctIndex: 3,
+        explanation: "56 ÷ 7 = 8 botol air mineral untuk setiap regu."
+    },
+    {
+        id: 9,
+        category: "SOAL CERITA CAMPURAN",
+        question: "Rani memetik 4 keranjang apel, tiap keranjang berisi 7 apel. Apel tersebut lalu dimakan 3 buah oleh adiknya. Berapa sisa apel Rani?",
+        options: ["28 apel", "25 apel", "24 apel", "31 apel"],
+        correctIndex: 1,
+        explanation: "Total apel = 4 × 7 = 28 apel. Dimakan 3, sisa = 28 - 3 = 25 apel."
+    },
+    {
+        id: 10,
+        category: "TANTANGAN AKHIR",
+        question: "Ayah membeli 6 kotak kue, masing-masing berisi 6 kue. Semua kue itu dibagikan rata kepada 9 anak. Berapa kue yang diterima tiap anak?",
+        options: ["3 kue", "5 kue", "4 kue", "6 kue"],
+        correctIndex: 2,
+        explanation: "Total kue = 6 × 6 = 36 kue. Dibagi 9 anak: 36 ÷ 9 = 4 kue tiap anak!"
+    }
+];
+
+// --- 3. KONFIGURASI & INISIALISASI CANVAS ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Resolusi internal tetap bergaya NES agar proporsi lompatan dan tile konsisten di semua layar
+const VIRTUAL_HEIGHT = 480;
+let VIRTUAL_WIDTH = 854;
+const TILE = 32; // Ukuran 1 blok standar (32x32 px)
+const GRAVITY = 0.58;
+const MAX_FALL_SPEED = 13;
+
+function resizeCanvas() {
+    const aspect = window.innerWidth / window.innerHeight;
+    VIRTUAL_WIDTH = Math.max(480, Math.round(VIRTUAL_HEIGHT * aspect));
+    canvas.width = VIRTUAL_WIDTH;
+    canvas.height = VIRTUAL_HEIGHT;
+    ctx.imageSmoothingEnabled = false;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// --- 4. STATE PERMAINAN ---
+const GAME_STATE = {
+    START: 'START',
+    PLAYING: 'PLAYING',
+    QUIZ: 'QUIZ',
+    FLAG_ANIM: 'FLAG_ANIM',
+    VICTORY: 'VICTORY'
+};
+
+let currentState = GAME_STATE.START;
+let score = 0;
+let coins = 0;
+let timeLeft = 400;
+let timeTimer = 0;
+let frameCount = 0;
+let cameraX = 0;
+let activeQuestionBlock = null;
+
+// Input state
+const keys = {
+    left: false,
+    right: false,
+    up: false
+};
+
+// Entitas Dunia
+let player = {};
+let platforms = [];      // Tanah, Brick, Used Block, Pipe/Stair
+let questionBlocks = []; // 10 Blok "?" utama
+let enemies = [];        // Goomba berpatroli
+let mushrooms = [];      // Jamur Super yang keluar dari blok "?"
+let floatingTexts = [];  // Efek skor melayang (+100, +1000)
+let particles = [];      // Pecahan bata / koin loncat
+let scenery = [];        // Bukit, awan, semak
+let goalFlag = {};       // Tiang bendera & kastil
+
+// --- 5. PEMBANGUN LEVEL WORLD 1-1 (PANJANG DENGAN 10 BLOK "?" & JURANG) ---
+// Tinggi tanah dasar adalah Y = 416 (2 baris bata dari bawah: y=416 dan y=448)
+const GROUND_Y = 416;
+const LEVEL_WIDTH = 225 * TILE; // 7200 px
+
+function initGame() {
+    score = 0;
+    coins = 0;
+    timeLeft = 400;
+    timeTimer = 0;
+    frameCount = 0;
+    cameraX = 0;
+    activeQuestionBlock = null;
+
+    platforms = [];
+    questionBlocks = [];
+    enemies = [];
+    mushrooms = [];
+    floatingTexts = [];
+    particles = [];
+    scenery = [];
+
+    // Karakter Utama (Mario 8-bit)
+    player = {
+        x: 3 * TILE,
+        y: GROUND_Y - 32,
+        w: 24,
+        h: 32,
+        vx: 0,
+        vy: 0,
+        speed: 4.3,
+        jumpForce: -12.2,
+        grounded: false,
+        facing: 1, // 1 kanan, -1 kiri
+        isSuper: false,
+        invulnTimer: 0,
+        walkFrame: 0
+    };
+
+    // Daftar celah jurang (bottomless pits) dalam satuan kolom Tile
+    const pits = [
+        { start: 22, end: 24 },
+        { start: 44, end: 46 },
+        { start: 68, end: 71 },
+        { start: 94, end: 96 },
+        { start: 118, end: 121 },
+        { start: 145, end: 148 },
+        { start: 172, end: 175 },
+        { start: 196, end: 199 }
+    ];
+
+    const isPit = (col) => pits.some(p => col >= p.start && col <= p.end);
+
+    // Bangun Lantai Tanah (2 lapis bata oranye-cokelat)
+    for (let col = 0; col < 225; col++) {
+        if (!isPit(col)) {
+            platforms.push({ x: col * TILE, y: GROUND_Y, w: TILE, h: TILE, type: 'ground' });
+            platforms.push({ x: col * TILE, y: GROUND_Y + TILE, w: TILE, h: TILE, type: 'ground' });
+        }
+    }
+
+    // Helper tambah deretan bata merah-cokelat
+    const addBricks = (startCol, rowFromTop, count) => {
+        for (let i = 0; i < count; i++) {
+            platforms.push({
+                x: (startCol + i) * TILE,
+                y: rowFromTop * TILE,
+                w: TILE,
+                h: TILE,
+                type: 'brick',
+                bumpOffset: 0
+            });
+        }
+    };
+
+    // Helper tambah tangga balok keras (hard block)
+    const addHardBlock = (col, rowFromTop) => {
+        platforms.push({
+            x: col * TILE,
+            y: rowFromTop * TILE,
+            w: TILE,
+            h: TILE,
+            type: 'hard'
+        });
+    };
+
+    // Helper tambah Blok "?" (Total 10 blok berurutan dari kiri ke kanan)
+    let qIndex = 0;
+    const addQBlock = (col, rowFromTop) => {
+        const qb = {
+            x: col * TILE,
+            y: rowFromTop * TILE,
+            w: TILE,
+            h: TILE,
+            qIndex: qIndex,
+            answered: false,
+            bumpOffset: 0
+        };
+        questionBlocks.push(qb);
+        qIndex++;
+    };
+
+    // --- DESAIN PLATFORM & 10 BLOK "?" (BERVARIASI KETINGGIAN & TANTANGAN) ---
+    // Area 1: Pengenalan & Blok "?" #1
+    addQBlock(11, 9); // Berdiri sendiri
+    addBricks(15, 9, 1);
+    addQBlock(16, 9); // Diapit bata (#2)
+    addBricks(17, 9, 1);
+    addBricks(16, 5, 1); // Pijakan atas
+
+    // Area 2: Setelah jurang pertama & Blok "?" #3 di atas jurang
+    addQBlock(23, 8); // Tepat di atas jurang 22-24 (#3)
+    addBricks(29, 9, 4);
+    addBricks(33, 6, 4); // Platform bertingkat tinggi
+    addQBlock(35, 3); // Sangat tinggi di atas platform bertingkat (#4)
+
+    // Area 3: Platform tinggi & Blok "?" #5
+    addBricks(41, 9, 2);
+    // Jurang 44-46
+    addBricks(48, 8, 3);
+    addBricks(52, 6, 3);
+    addQBlock(56, 6); // Blok "?" #5 di ketinggian menengah-tinggi
+    addBricks(57, 6, 2);
+
+    // Area 4: Pijakan bertingkat menuju Blok "?" #6
+    addBricks(63, 9, 3);
+    // Jurang 68-71
+    addBricks(73, 8, 2);
+    addBricks(76, 5, 4);
+    addQBlock(78, 5); // Diapit bata tinggi (#6)
+    addBricks(81, 8, 3);
+
+    // Area 5: Blok "?" #7 di atas pijakan tinggi
+    addBricks(88, 9, 3);
+    addQBlock(90, 5); // Tinggi (#7)
+    // Jurang 94-96
+    addBricks(99, 8, 5);
+
+    // Area 6: Blok "?" #8 di atas jurang & tangga
+    addBricks(108, 9, 2);
+    addBricks(111, 7, 3);
+    addQBlock(119, 7); // Di atas jurang 118-121 (#8)
+    addBricks(124, 9, 4);
+
+    // Area 7: Blok "?" #9 di puncak pijakan bertingkat
+    addBricks(132, 9, 3);
+    addBricks(136, 7, 3);
+    addBricks(140, 5, 3);
+    addQBlock(141, 2); // Puncak tinggi (#9)
+    // Jurang 145-148
+
+    // Area 8: Rintangan akhir menuju Blok "?" #10
+    addBricks(152, 9, 4);
+    addBricks(158, 7, 4);
+    addBricks(164, 9, 3);
+    addQBlock(165, 5); // Blok "?" #10 (Tantangan Akhir)
+    // Jurang terakhir 172-175
+
+    // Tangga klasik menuju Tiang Bendera (kolom 180 - 187)
+    for (let step = 0; step < 7; step++) {
+        for (let h = 0; h <= step; h++) {
+            addHardBlock(180 + step, 12 - h);
+        }
+    }
+
+    // Tiang Bendera & Kastil Akhir (kolom 193 & 203)
+    // Pastikan tanah di area akhir kokoh (kolom 176 - 224 tanpa jurang)
+    for (let col = 196; col <= 199; col++) {
+        // Tambal jurang terakhir agar area kastil aman setelah bendera
+        platforms.push({ x: col * TILE, y: GROUND_Y, w: TILE, h: TILE, type: 'ground' });
+        platforms.push({ x: col * TILE, y: GROUND_Y + TILE, w: TILE, h: TILE, type: 'ground' });
+    }
+
+    goalFlag = {
+        poleX: 193 * TILE + 12,
+        poleTopY: 4 * TILE,
+        poleBottomY: GROUND_Y,
+        flagY: 4 * TILE + 12,
+        castleX: 202 * TILE,
+        castleY: GROUND_Y - 5 * TILE,
+        triggered: false
+    };
+
+    // --- MUSUH GOOMBA BERPATROLI (DI TANAH & DI ATAS PLATFORM BATA) ---
+    const addGoomba = (col, yPos, minCol, maxCol) => {
+        enemies.push({
+            x: col * TILE,
+            y: yPos - 28,
+            w: 28,
+            h: 28,
+            vx: -1.35,
+            minX: minCol * TILE,
+            maxX: maxCol * TILE,
+            alive: true,
+            squashedTimer: 0
+        });
+    };
+
+    // Patroli di permukaan tanah (antara bukit / jurang)
+    addGoomba(14, GROUND_Y, 8, 21);
+    addGoomba(31, GROUND_Y, 25, 43);
+    addGoomba(54, GROUND_Y, 47, 67);
+    addGoomba(82, GROUND_Y, 72, 93);
+    addGoomba(106, GROUND_Y, 97, 117);
+    addGoomba(134, GROUND_Y, 122, 144);
+    addGoomba(160, GROUND_Y, 149, 171);
+
+    // Patroli di atas deretan platform bata tinggi
+    addGoomba(30, 9 * TILE, 29, 32);
+    addGoomba(34, 6 * TILE, 33, 36);
+    addGoomba(77, 5 * TILE, 76, 79);
+    addGoomba(101, 8 * TILE, 99, 103);
+    addGoomba(159, 7 * TILE, 158, 161);
+
+    // --- DEKORASI LATAR BELAKANG KHAS MARIO 8-BIT (BUKIT, AWAN, SEMAK) ---
+    for (let section = 0; section < 14; section++) {
+        const baseCol = section * 16;
+        // Bukit hijau besar & kecil dengan bintik mata hitam vertikal
+        if (!isPit(baseCol + 2) && !isPit(baseCol + 4)) {
+            scenery.push({ type: 'hill_big', x: (baseCol + 1) * TILE, y: GROUND_Y });
+        }
+        if (!isPit(baseCol + 11)) {
+            scenery.push({ type: 'hill_small', x: (baseCol + 10) * TILE, y: GROUND_Y });
+        }
+        // Semak hijau muda (lime green) di permukaan tanah
+        if (!isPit(baseCol + 7) && !isPit(baseCol + 8)) {
+            scenery.push({ type: 'bush', x: (baseCol + 6) * TILE, y: GROUND_Y, size: 2 });
+        }
+        // Awan putih bergaris tepi biru di langit
+        scenery.push({ type: 'cloud', x: (baseCol + 3) * TILE, y: 2.5 * TILE, size: 1 });
+        scenery.push({ type: 'cloud', x: (baseCol + 11) * TILE, y: 1.8 * TILE, size: 2 });
+    }
+}
+
+// --- 6. SISTEM NOTIFIKASI TOAST & KUIS POP-UP ---
+let toastTimeout = null;
+function showToast(msg, duration = 2600) {
+    const banner = document.getElementById('toast-banner');
+    banner.textContent = msg;
+    banner.classList.remove('hidden');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        banner.classList.add('hidden');
+    }, duration);
+}
+
+function openQuizModal(qBlock) {
+    currentState = GAME_STATE.QUIZ;
+    activeQuestionBlock = qBlock;
+    keys.left = false;
+    keys.right = false;
+    keys.up = false;
+
+    const qData = QUIZ_QUESTIONS[qBlock.qIndex];
+    document.getElementById('quiz-badge').textContent = `BLOK ? #${qData.id} / 10`;
+    document.getElementById('quiz-category').textContent = qData.category;
+    document.getElementById('quiz-question').textContent = qData.question;
+
+    const optionsContainer = document.getElementById('quiz-options');
+    optionsContainer.innerHTML = '';
+
+    const feedbackBox = document.getElementById('quiz-feedback');
+    feedbackBox.classList.add('hidden');
+    feedbackBox.classList.remove('feedback-correct', 'feedback-wrong');
+
+    const labels = ['A', 'B', 'C', 'D'];
+    qData.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = `${labels[idx]}. ${optText}`;
+        btn.onclick = () => handleAnswerSelection(idx, qData);
+        optionsContainer.appendChild(btn);
+    });
+
+    document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function handleAnswerSelection(selectedIndex, qData) {
+    // Nonaktifkan semua tombol opsi setelah memilih
+    const allBtns = document.querySelectorAll('.option-btn');
+    allBtns.forEach(b => b.disabled = true);
+
+    const feedbackBox = document.getElementById('quiz-feedback');
+    const feedbackTitle = document.getElementById('feedback-title');
+    const feedbackDesc = document.getElementById('feedback-desc');
+
+    feedbackBox.classList.remove('hidden');
+
+    if (selectedIndex === qData.correctIndex) {
+        // JAWABAN BENAR
+        sfx.powerup();
+        feedbackBox.classList.add('feedback-correct');
+        feedbackTitle.textContent = "⭐ JAWABAN BENAR! (+1000 SKOR & JAMUR SUPER)";
+        feedbackDesc.textContent = `Hebat! ${qData.explanation}`;
+
+        activeQuestionBlock.answered = true;
+        score += 1000;
+        coins += 1;
+
+        // Aktifkan status Super Mario (lebih besar & kuat)
+        if (!player.isSuper) {
+            player.isSuper = true;
+            player.y -= 12;
+            player.h = 44;
+        }
+        addFloatingText(player.x, player.y - 16, "SUPER! +1000", "#FAC000");
+    } else {
+        // JAWABAN SALAH -> Blok "?" mereset dirinya agar bisa disundul ulang
+        sfx.wrong();
+        feedbackBox.classList.add('feedback-wrong');
+        const correctLetter = ['A', 'B', 'C', 'D'][qData.correctIndex];
+        feedbackTitle.textContent = "❌ KURANG TEPAT! COBA SUNDUL LAGI YA!";
+        feedbackDesc.textContent = `Jawaban benar adalah ${correctLetter} (${qData.options[qData.correctIndex]}). Penjelasan: ${qData.explanation}`;
+
+        // Reset blok "?" agar tetap aktif & bisa disundul kembali
+        activeQuestionBlock.answered = false;
+    }
+}
+
+document.getElementById('btn-continue-quiz').addEventListener('click', () => {
+    document.getElementById('quiz-modal').classList.add('hidden');
+    currentState = GAME_STATE.PLAYING;
+    const answeredCount = questionBlocks.filter(b => b.answered).length;
+    if (answeredCount === 10) {
+        showToast("SEMUA 10 BLOK '?' TERJAWAB! LARI KE TIANG BENDERA!", 3500);
+    }
+});
+
+// --- 7. EFEK PARTIKEL & TEKS MELAYANG ---
+function addFloatingText(x, y, text, color = "#fff") {
+    floatingTexts.push({ x, y, text, color, life: 55 });
+}
+
+function spawnMushroom(block) {
+    mushrooms.push({
+        x: block.x + 2,
+        y: block.y - 28,
+        w: 28,
+        h: 28,
+        vx: 1.5,
+        vy: -2,
+        life: 90 // Muncul sebentar sebagai efek visual dari blok
+    });
+}
+
+// --- 8. UPDATE LOGIKA FISIKA & INTERAKSI ---
+function checkAABB(a, b) {
+    return a.x < b.x + b.w &&
+           a.x + a.w > b.x &&
+           a.y < b.y + b.h &&
+           a.y + a.h > b.y;
+}
+
+function update() {
+    frameCount++;
+
+    if (currentState === GAME_STATE.FLAG_ANIM) {
+        // Animasi bendera turun dan Mario berjalan ke kastil
+        if (goalFlag.flagY < goalFlag.poleBottomY - 36) {
+            goalFlag.flagY += 4;
+            player.y = Math.min(GROUND_Y - player.h, player.y + 4);
+        } else {
+            player.x += 2.5;
+            player.y = GROUND_Y - player.h;
+            player.walkFrame += 0.2;
+            if (player.x >= goalFlag.castleX + 24) {
+                currentState = GAME_STATE.VICTORY;
+                document.getElementById('final-score').textContent = String(score).padStart(6, '0');
+                document.getElementById('final-coins').textContent = `x${String(coins).padStart(2, '0')}`;
+                document.getElementById('victory-modal').classList.remove('hidden');
+            }
+        }
+        return;
+    }
+
+    if (currentState !== GAME_STATE.PLAYING) return;
+
+    // Timer mundur ala Mario
+    timeTimer++;
+    if (timeTimer >= 45) {
+        timeTimer = 0;
+        if (timeLeft > 0) timeLeft--;
+    }
+
+    if (player.invulnTimer > 0) player.invulnTimer--;
+
+    // Gerakan Horizontal Pemain
+    if (keys.left) {
+        player.vx = -player.speed;
+        player.facing = -1;
+        player.walkFrame += 0.22;
+    } else if (keys.right) {
+        player.vx = player.speed;
+        player.facing = 1;
+        player.walkFrame += 0.22;
+    } else {
+        player.vx *= 0.78;
+        if (Math.abs(player.vx) < 0.2) player.vx = 0;
+        player.walkFrame = 0;
+    }
+
+    // Lompatan Pemain
+    if (keys.up && player.grounded) {
+        player.vy = player.jumpForce;
+        player.grounded = false;
+        sfx.jump();
+    }
+
+    // Terapkan Gravitasi
+    player.vy = Math.min(MAX_FALL_SPEED, player.vy + GRAVITY);
+
+    // Gabungkan semua objek solid (platform + 10 blok "?")
+    const allSolids = [...platforms, ...questionBlocks];
+
+    // --- KOLISI SUMBU X ---
+    player.x += player.vx;
+    if (player.x < cameraX) player.x = cameraX; // Tidak bisa mundur melewati kamera kiri
+
+    for (let s of allSolids) {
+        if (checkAABB(player, s)) {
+            if (player.vx > 0) {
+                player.x = s.x - player.w;
+            } else if (player.vx < 0) {
+                player.x = s.x + s.w;
+            }
+            player.vx = 0;
+        }
+    }
+
+    // --- KOLISI SUMBU Y ---
+    player.y += player.vy;
+    player.grounded = false;
+
+    for (let s of allSolids) {
+        if (checkAABB(player, s)) {
+            if (player.vy > 0) {
+                // Mendarat di atas blok
+                player.y = s.y - player.h;
+                player.vy = 0;
+                player.grounded = true;
+            } else if (player.vy < 0) {
+                // Menyundul blok dari bawah!
+                player.y = s.y + s.h;
+                player.vy = 1.5;
+
+                if (s.bumpOffset !== undefined) {
+                    s.bumpOffset = -8;
+                }
+
+                // Cek apakah yang disundul adalah Blok "?"
+                if (s.qIndex !== undefined) {
+                    if (!s.answered) {
+                        sfx.coin();
+                        spawnMushroom(s);
+                        openQuizModal(s);
+                        return; // Hentikan frame saat modal kuis muncul
+                    } else {
+                        sfx.bump();
+                    }
+                } else {
+                    sfx.bump();
+                }
+            }
+        }
+    }
+
+    // Kembalikan animasi pantulan blok yang disundul
+    allSolids.forEach(s => {
+        if (s.bumpOffset < 0) s.bumpOffset = Math.min(0, s.bumpOffset + 1.5);
+    });
+
+    // Cek Jatuh ke Jurang (Respawn aman di pijakan terdekat sebelah kiri)
+    if (player.y > VIRTUAL_HEIGHT + 40) {
+        sfx.hurt();
+        score = Math.max(0, score - 200);
+        showToast("AWAS JURANG! -200 SKOR", 1800);
+        // Cari tanah aman di belakang titik jatuh
+        let safeX = Math.max(2 * TILE, player.x - 5 * TILE);
+        while (safeX > 2 * TILE) {
+            const hasGround = platforms.some(p => p.type === 'ground' && safeX >= p.x && safeX <= p.x + p.w);
+            if (hasGround) break;
+            safeX -= TILE;
+        }
+        player.x = safeX;
+        player.y = GROUND_Y - player.h - 32;
+        player.vx = 0;
+        player.vy = 0;
+        player.invulnTimer = 60;
+    }
+
+    // --- UPDATE JAMUR SUPER DEKORATIF ---
+    for (let i = mushrooms.length - 1; i >= 0; i--) {
+        const m = mushrooms[i];
+        m.life--;
+        m.vy = Math.min(6, m.vy + 0.3);
+        m.x += m.vx;
+        m.y += m.vy;
+        for (let s of allSolids) {
+            if (checkAABB(m, s) && m.vy > 0) {
+                m.y = s.y - m.h;
+                m.vy = 0;
+            }
+        }
+        if (m.life <= 0) mushrooms.splice(i, 1);
+    }
+
+    // --- UPDATE MUSUH GOOMBA BERPATROLI ---
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const g = enemies[i];
+        if (!g.alive) {
+            g.squashedTimer--;
+            if (g.squashedTimer <= 0) enemies.splice(i, 1);
+            continue;
+        }
+
+        // Patroli bolak-balik kiri dan kanan
+        g.x += g.vx;
+        if (g.x <= g.minX) {
+            g.x = g.minX;
+            g.vx = Math.abs(g.vx);
+        } else if (g.x + g.w >= g.maxX) {
+            g.x = g.maxX - g.w;
+            g.vx = -Math.abs(g.vx);
+        }
+
+        // Interaksi Mario dengan Goomba
+        if (checkAABB(player, g)) {
+            const playerBottomPrev = (player.y - player.vy) + player.h;
+            if (player.vy > 0 && playerBottomPrev <= g.y + 14) {
+                // Menginjak bagian atas musuh -> Goomba gepeng!
+                g.alive = false;
+                g.squashedTimer = 25;
+                player.vy = -8.5; // Memantul ke atas
+                score += 200;
+                sfx.stomp();
+                addFloatingText(g.x, g.y - 10, "+200", "#fff");
+            } else if (player.invulnTimer === 0) {
+                // Menabrak musuh dari samping
+                sfx.hurt();
+                player.invulnTimer = 75;
+                player.vy = -6;
+                player.vx = (player.x < g.x) ? -6 : 6;
+                if (player.isSuper) {
+                    player.isSuper = false;
+                    player.h = 32;
+                    showToast("TERKENA GOOMBA! KEKUATAN SUPER HILANG!", 1800);
+                } else {
+                    score = Math.max(0, score - 150);
+                    coins = Math.max(0, coins - 1);
+                    showToast("TERTABRAK GOOMBA! -150 SKOR & -1 KOIN", 1800);
+                }
+            }
+        }
+    }
+
+    // --- UPDATE TEKS MELAYANG ---
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        floatingTexts[i].y -= 0.9;
+        floatingTexts[i].life--;
+        if (floatingTexts[i].life <= 0) floatingTexts.splice(i, 1);
+    }
+
+    // --- KAMERA MENGIKUTI PEMAIN ---
+    const targetCam = player.x - VIRTUAL_WIDTH * 0.35;
+    if (targetCam > cameraX) {
+        cameraX = Math.min(LEVEL_WIDTH - VIRTUAL_WIDTH, targetCam);
+    }
+
+    // --- CEK GARIS AKHIR (TIANG BENDERA) ---
+    const flagHitbox = {
+        x: goalFlag.poleX - 6,
+        y: goalFlag.poleTopY,
+        w: 20,
+        h: goalFlag.poleBottomY - goalFlag.poleTopY
+    };
+
+    if (!goalFlag.triggered && checkAABB(player, flagHitbox)) {
+        const answeredCount = questionBlocks.filter(b => b.answered).length;
+        if (answeredCount < 10) {
+            // Belum menyelesaikan semua 10 Blok "?"
+            player.x = flagHitbox.x - player.w - 4;
+            player.vx = 0;
+            sfx.bump();
+            showToast(`JAWAB SEMUA BLOK "?" DULU! (${answeredCount}/10 SELESAI)`, 2600);
+        } else {
+            // Semua 10 Blok "?" terjawab -> Menang!
+            goalFlag.triggered = true;
+            score += 2000;
+            sfx.flagpole();
+            currentState = GAME_STATE.FLAG_ANIM;
+        }
+    }
+}
+
+// --- 9. RENDERING PIXEL ART 8-BIT NES ---
+function drawBackground() {
+    // Langit biru cerah khas NES (#5C94FC)
+    ctx.fillStyle = '#5C94FC';
+    ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+    // Gambar dekorasi dengan efek parallax ringan untuk awan
+    scenery.forEach(item => {
+        if (item.type === 'cloud') {
+            const cx = Math.floor(item.x - cameraX * 0.6);
+            if (cx < -150 || cx > VIRTUAL_WIDTH + 150) return;
+            drawCloud(cx, item.y, item.size);
+        } else if (item.type === 'hill_big') {
+            const hx = Math.floor(item.x - cameraX);
+            if (hx < -180 || hx > VIRTUAL_WIDTH + 180) return;
+            drawHill(hx, item.y, 140, 88);
+        } else if (item.type === 'hill_small') {
+            const hx = Math.floor(item.x - cameraX);
+            if (hx < -120 || hx > VIRTUAL_WIDTH + 120) return;
+            drawHill(hx, item.y, 88, 52);
+        } else if (item.type === 'bush') {
+            const bx = Math.floor(item.x - cameraX);
+            if (bx < -140 || bx > VIRTUAL_WIDTH + 140) return;
+            drawBush(bx, item.y);
+        }
+    });
+}
+
+function drawCloud(x, y, size) {
+    const w = size === 2 ? 96 : 64;
+    // Garis tepi biru tua
+    ctx.fillStyle = '#183898';
+    ctx.fillRect(x + 8, y - 2, w - 16, 32);
+    ctx.fillRect(x - 2, y + 8, w + 4, 18);
+    // Isi putih awan
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(x + 10, y, w - 20, 28);
+    ctx.fillRect(x, y + 10, w, 14);
+}
+
+function drawHill(x, groundY, width, height) {
+    // Bukit hijau melengkung khas SMB 1-1
+    ctx.fillStyle = '#00A800';
+    ctx.beginPath();
+    ctx.moveTo(x, groundY);
+    ctx.quadraticCurveTo(x + width / 2, groundY - height * 1.6, x + width, groundY);
+    ctx.fill();
+
+    // Garis tepi hitam tipis
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Aksen bintik mata hitam vertikal di bagian bawah bukit
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x + width * 0.38, groundY - height * 0.45, 5, 14);
+    ctx.fillRect(x + width * 0.56, groundY - height * 0.35, 5, 14);
+}
+
+function drawBush(x, groundY) {
+    // Semak-semak hijau muda (lime green)
+    ctx.fillStyle = '#80D010';
+    ctx.beginPath();
+    ctx.arc(x + 18, groundY - 10, 16, Math.PI, 0);
+    ctx.arc(x + 42, groundY - 14, 20, Math.PI, 0);
+    ctx.arc(x + 66, groundY - 10, 16, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(x + 2, groundY - 12, 80, 12);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 2, groundY - 12, 80, 12);
+}
+
+function drawTiles() {
+    // 1. Gambar Platform (Tanah, Bata Merah-Cokelat, Tangga Keras)
+    platforms.forEach(p => {
+        const sx = Math.floor(p.x - cameraX);
+        const sy = Math.floor(p.y + (p.bumpOffset || 0));
+        if (sx < -TILE || sx > VIRTUAL_WIDTH + TILE) return;
+
+        if (p.type === 'ground') {
+            // Bata tanah oranye-cokelat dengan retakan hitam
+            ctx.fillStyle = '#C84C0C';
+            ctx.fillRect(sx, sy, TILE, TILE);
+            // Highlight atas terang
+            ctx.fillStyle = '#FCBCB0';
+            ctx.fillRect(sx + 2, sy + 2, TILE - 4, 3);
+            // Garis retakan hitam khas tanah SMB
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(sx, sy, TILE, 2);
+            ctx.fillRect(sx + 14, sy, 2, 16);
+            ctx.fillRect(sx, sy + 16, TILE, 2);
+            ctx.fillRect(sx + 6, sy + 16, 2, 16);
+            ctx.fillRect(sx + 24, sy + 16, 2, 16);
+        } else if (p.type === 'brick') {
+            // Balok bata merah-cokelat
+            ctx.fillStyle = '#B83418';
+            ctx.fillRect(sx, sy, TILE, TILE);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+            // Pola susunan bata
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(sx, sy + 15, TILE, 2);
+            ctx.fillRect(sx + 15, sy, 2, 16);
+            ctx.fillRect(sx + 7, sy + 16, 2, 16);
+            ctx.fillRect(sx + 23, sy + 16, 2, 16);
+        } else if (p.type === 'hard') {
+            // Balok tangga kokoh
+            ctx.fillStyle = '#C84C0C';
+            ctx.fillRect(sx, sy, TILE, TILE);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+            ctx.fillStyle = '#FCBCB0';
+            ctx.fillRect(sx + 4, sy + 4, TILE - 8, 3);
+            ctx.fillRect(sx + 4, sy + 4, 3, TILE - 8);
+        }
+    });
+
+    // 2. Gambar 10 Blok Tanda Tanya ("?")
+    const blinkPhase = Math.floor(frameCount / 14) % 3;
+    const qColors = ['#FAC000', '#E49000', '#C84C0C'];
+
+    questionBlocks.forEach(qb => {
+        const sx = Math.floor(qb.x - cameraX);
+        const sy = Math.floor(qb.y + (qb.bumpOffset || 0));
+        if (sx < -TILE || sx > VIRTUAL_WIDTH + TILE) return;
+
+        if (qb.answered) {
+            // Sudah dijawab -> Berubah menjadi balok besi cokelat polos
+            ctx.fillStyle = '#7C542C';
+            ctx.fillRect(sx, sy, TILE, TILE);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+            // 4 titik sudut hitam
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(sx + 4, sy + 4, 3, 3);
+            ctx.fillRect(sx + TILE - 7, sy + 4, 3, 3);
+            ctx.fillRect(sx + 4, sy + TILE - 7, 3, 3);
+            ctx.fillRect(sx + TILE - 7, sy + TILE - 7, 3, 3);
+        } else {
+            // Aktif -> Oranye keemasan berkedip dengan 4 titik sudut hitam & tanda "?"
+            ctx.fillStyle = qColors[blinkPhase];
+            ctx.fillRect(sx, sy, TILE, TILE);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(sx + 1, sy + 1, TILE - 2, TILE - 2);
+
+            // 4 titik baut sudut hitam
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(sx + 3, sy + 3, 3, 3);
+            ctx.fillRect(sx + TILE - 6, sy + 3, 3, 3);
+            ctx.fillRect(sx + 3, sy + TILE - 6, 3, 3);
+            ctx.fillRect(sx + TILE - 6, sy + TILE - 6, 3, 3);
+
+            // Huruf "?" dengan bayangan hitam
+            ctx.font = 'bold 18px "Press Start 2P", monospace';
+            ctx.fillStyle = '#000000';
+            ctx.fillText('?', sx + 9, sy + 25);
+            ctx.fillStyle = '#FFF8E0';
+            ctx.fillText('?', sx + 7, sy + 23);
+        }
+    });
+}
+
+function drawGoalAndCastle() {
+    const px = Math.floor(goalFlag.poleX - cameraX);
+    const cx = Math.floor(goalFlag.castleX - cameraX);
+
+    // Tiang Bendera
+    if (px > -60 && px < VIRTUAL_WIDTH + 60) {
+        // Alas batu tiang
+        ctx.fillStyle = '#C84C0C';
+        ctx.fillRect(px - 10, goalFlag.poleBottomY - 24, 28, 24);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px - 10, goalFlag.poleBottomY - 24, 28, 24);
+
+        // Batang tiang hijau terang
+        ctx.fillStyle = '#80D010';
+        ctx.fillRect(px, goalFlag.poleTopY, 8, goalFlag.poleBottomY - goalFlag.poleTopY - 24);
+        ctx.strokeRect(px, goalFlag.poleTopY, 8, goalFlag.poleBottomY - goalFlag.poleTopY - 24);
+
+        // Bola puncak tiang
+        ctx.fillStyle = '#00A800';
+        ctx.beginPath();
+        ctx.arc(px + 4, goalFlag.poleTopY - 4, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Bendera segitiga hijau-putih
+        const fy = Math.floor(goalFlag.flagY);
+        ctx.fillStyle = '#00A800';
+        ctx.beginPath();
+        ctx.moveTo(px, fy);
+        ctx.lineTo(px - 38, fy + 14);
+        ctx.lineTo(px, fy + 28);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    // Kastil Bata Kecil di samping tiang bendera
+    if (cx > -200 && cx < VIRTUAL_WIDTH + 200) {
+        const cy = goalFlag.castleY;
+        const cw = 128;
+        const ch = 5 * TILE;
+
+        // Badan kastil bata oranye-cokelat
+        ctx.fillStyle = '#C84C0C';
+        ctx.fillRect(cx, cy + 32, cw, ch - 32);
+        ctx.fillRect(cx + 24, cy, cw - 48, 32);
+
+        // Gerbang hitam melengkung
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(cx + 46, cy + ch - 52, 36, 52);
+        ctx.beginPath();
+        ctx.arc(cx + 64, cy + ch - 52, 18, Math.PI, 0);
+        ctx.fill();
+
+        // Jendela kecil
+        ctx.fillRect(cx + 38, cy + 12, 14, 18);
+        ctx.fillRect(cx + 76, cy + 12, 14, 18);
+
+        // Benteng bergerigi atas
+        ctx.fillStyle = '#000';
+        for (let i = 0; i < 4; i++) {
+            ctx.strokeRect(cx + i * 32, cy + 32, 32, 12);
+        }
+    }
+}
+
+function drawMushrooms() {
+    mushrooms.forEach(m => {
+        const sx = Math.floor(m.x - cameraX);
+        const sy = Math.floor(m.y);
+        // Batang krem
+        ctx.fillStyle = '#FCE4A0';
+        ctx.fillRect(sx + 6, sy + 14, 16, 14);
+        // Tudung jamur merah-oranye berbintik krem
+        ctx.fillStyle = '#E43800';
+        ctx.beginPath();
+        ctx.arc(sx + 14, sy + 14, 14, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#FCE4A0';
+        ctx.beginPath();
+        ctx.arc(sx + 9, sy + 8, 3.5, 0, Math.PI * 2);
+        ctx.arc(sx + 19, sy + 8, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+function drawEnemies() {
+    enemies.forEach(g => {
+        const sx = Math.floor(g.x - cameraX);
+        const sy = Math.floor(g.y);
+        if (sx < -40 || sx > VIRTUAL_WIDTH + 40) return;
+
+        if (!g.alive) {
+            // Goomba gepeng
+            ctx.fillStyle = '#A84000';
+            ctx.fillRect(sx, sy + 18, 28, 10);
+            ctx.strokeStyle = '#000';
+            ctx.strokeRect(sx, sy + 18, 28, 10);
+            return;
+        }
+
+        // Kepala jamur cokelat Goomba
+        ctx.fillStyle = '#A84000';
+        ctx.beginPath();
+        ctx.moveTo(sx + 2, sy + 16);
+        ctx.lineTo(sx + 7, sy + 2);
+        ctx.lineTo(sx + 21, sy + 2);
+        ctx.lineTo(sx + 26, sy + 16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Badan krem bawah
+        ctx.fillStyle = '#FCE4A0';
+        ctx.fillRect(sx + 8, sy + 16, 12, 7);
+
+        // Mata & alis menyatu pemarah
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(sx + 7, sy + 8, 5, 6);
+        ctx.fillRect(sx + 16, sy + 8, 5, 6);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(sx + 9, sy + 10, 2, 4);
+        ctx.fillRect(sx + 17, sy + 10, 2, 4);
+        // Alis menyatu
+        ctx.fillRect(sx + 6, sy + 6, 16, 2);
+
+        // Kaki hitam kecil bergantian jalan
+        const step = Math.floor(frameCount / 10) % 2;
+        ctx.fillStyle = '#000000';
+        if (step === 0) {
+            ctx.fillRect(sx + 3, sy + 23, 9, 5);
+            ctx.fillRect(sx + 17, sy + 21, 8, 5);
+        } else {
+            ctx.fillRect(sx + 4, sy + 21, 8, 5);
+            ctx.fillRect(sx + 16, sy + 23, 9, 5);
+        }
+    });
+}
+
+function drawPlayer() {
+    // Berkedip jika sedang kebal sementara
+    if (player.invulnTimer > 0 && Math.floor(frameCount / 4) % 2 === 0) return;
+
+    const sx = Math.floor(player.x - cameraX);
+    const sy = Math.floor(player.y);
+    const scaleY = player.isSuper ? 1.375 : 1;
+
+    ctx.save();
+    ctx.translate(sx + player.w / 2, sy + player.h);
+    ctx.scale(player.facing, scaleY);
+
+    // Sepatu cokelat
+    const walkOffset = player.grounded && Math.abs(player.vx) > 0.3
+        ? Math.sin(player.walkFrame * 3) * 3
+        : 0;
+    ctx.fillStyle = '#6C2C00';
+    ctx.fillRect(-10 + walkOffset, -5, 9, 5);
+    ctx.fillRect(2 - walkOffset, -5, 9, 5);
+
+    // Baju kodok / overall merah
+    ctx.fillStyle = '#D82800';
+    ctx.fillRect(-8, -16, 16, 11);
+
+    // Kemeja cokelat bagian lengan & bahu
+    ctx.fillStyle = '#884400';
+    ctx.fillRect(-10, -16, 4, 8);
+    ctx.fillRect(6, -16, 4, 8);
+
+    // Kancing kuning overall
+    ctx.fillStyle = '#FAC000';
+    ctx.fillRect(-5, -13, 2, 2);
+    ctx.fillRect(3, -13, 2, 2);
+
+    // Kepala & wajah krem
+    ctx.fillStyle = '#FCA044';
+    ctx.fillRect(-7, -26, 14, 10);
+    // Hidung & kumis
+    ctx.fillRect(6, -23, 4, 4);
+    ctx.fillStyle = '#4C2400';
+    ctx.fillRect(3, -19, 7, 2);
+    // Mata hitam
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(3, -25, 2, 3);
+
+    // Topi merah khas Mario
+    ctx.fillStyle = '#D82800';
+    ctx.fillRect(-8, -31, 16, 5);
+    ctx.fillRect(-5, -28, 16, 3); // Lidah topi ke depan
+
+    ctx.restore();
+}
+
+function drawHUD() {
+    const answeredCount = questionBlocks.filter(b => b.answered).length;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '13px "Press Start 2P", monospace';
+    ctx.textBaseline = 'top';
+
+    const pad = 20;
+    const colW = (VIRTUAL_WIDTH - pad * 2) / 4;
+
+    // 1. MARIO & SCORE
+    ctx.fillText('MARIO', pad, 14);
+    ctx.fillText(String(score).padStart(6, '0'), pad, 32);
+
+    // 2. IKON KOIN BERKEDIP & JUMLAHNYA
+    const coinX = pad + colW * 1.1;
+    const coinW = Math.abs(Math.sin(frameCount * 0.1)) * 8 + 4;
+    ctx.fillStyle = '#FAC000';
+    ctx.fillRect(coinX + (12 - coinW) / 2, 30, coinW, 14);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(coinX + (12 - coinW) / 2, 30, coinW, 14);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(`x${String(coins).padStart(2, '0')}`, coinX + 18, 32);
+    ctx.fillText(`BLOK:${answeredCount}/10`, coinX, 14);
+
+    // 3. WORLD 1-1
+    const worldX = pad + colW * 2.25;
+    ctx.fillText('WORLD', worldX, 14);
+    ctx.fillText(' 1-1', worldX, 32);
+
+    // 4. TIME
+    const timeX = VIRTUAL_WIDTH - pad - 65;
+    ctx.fillText('TIME', timeX, 14);
+    ctx.fillText(String(timeLeft).padStart(3, '0'), timeX + 10, 32);
+}
+
+function drawFloatingTexts() {
+    floatingTexts.forEach(ft => {
+        const sx = Math.floor(ft.x - cameraX);
+        ctx.font = '11px "Press Start 2P", monospace';
+        ctx.fillStyle = '#000';
+        ctx.fillText(ft.text, sx + 2, ft.y + 2);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, sx, ft.y);
+    });
+}
+
+function render() {
+    ctx.clearRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+    drawBackground();
+    drawGoalAndCastle();
+    drawTiles();
+    drawMushrooms();
+    drawEnemies();
+    drawPlayer();
+    drawFloatingTexts();
+    drawHUD();
+}
+
+// --- 10. GAME LOOP UTAMA ---
+function gameLoop() {
+    update();
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+// --- 11. EVENT LISTENERS KEYBOARD & SENTUH ---
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
+        if (currentState === GAME_STATE.PLAYING) e.preventDefault();
+        keys.up = true;
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') keys.up = false;
+});
+
+function bindTouchButton(btnId, keyName) {
+    const btn = document.getElementById(btnId);
+    const press = (e) => {
+        e.preventDefault();
+        sfx.init();
+        keys[keyName] = true;
+        btn.classList.add('active');
+    };
+    const release = (e) => {
+        e.preventDefault();
+        keys[keyName] = false;
+        btn.classList.remove('active');
+    };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('touchcancel', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+}
+
+bindTouchButton('btn-left', 'left');
+bindTouchButton('btn-right', 'right');
+bindTouchButton('btn-jump', 'up');
+
+document.getElementById('btn-start-game').addEventListener('click', () => {
+    sfx.init();
+    initGame();
+    document.getElementById('start-modal').classList.add('hidden');
+    currentState = GAME_STATE.PLAYING;
+    showToast("SUNDUL 10 BLOK '?' UNTUK MENJAWAB SOAL!", 3000);
+});
+
+document.getElementById('btn-restart-game').addEventListener('click', () => {
+    sfx.init();
+    initGame();
+    document.getElementById('victory-modal').classList.add('hidden');
+    currentState = GAME_STATE.PLAYING;
+});
+
+// Inisialisasi awal saat halaman selesai dimuat
+window.onload = () => {
+    initGame();
+    gameLoop();
+};
+</script>
+</body>
+</html>
